@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SALES
+  WAREHOUSE
+  ACCOUNTS
+}
+
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+  DISTRIBUTOR
+}
+
+enum CustomerStatus {
+  LEAD
+  ACTIVE
+  INACTIVE
+}
+
+enum MovementType {
+  IN
+  OUT
+}
+
+enum ChallanStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(SALES)
+  createdAt    DateTime @default(now())
+
+  challans       Challan[]
+  followups      CustomerFollowup[]
+  stockMovements StockMovement[]
+
+  @@index([email])
+}
+
+model Customer {
+  id           String         @id @default(uuid())
+  name         String
+  mobile       String?
+  email        String?
+  businessName String?
+  gstNumber    String?
+  customerType CustomerType   @default(RETAIL)
+  address      String?
+  status       CustomerStatus @default(LEAD)
+  followUpDate DateTime?
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  challans  Challan[]
+  followups CustomerFollowup[]
+
+  @@index([status])
+}
+
+model CustomerFollowup {
+  id         String   @id @default(uuid())
+  note       String
+  createdAt  DateTime @default(now())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  @@index([customerId])
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  name          String
+  sku           String   @unique
+  category      String?
+  unitPrice     Float
+  currentStock  Int      @default(0)
+  minStockAlert Int      @default(0)
+  location      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items     ChallanItem[]
+  movements StockMovement[]
+
+  @@index([sku])
+}
+
+model StockMovement {
+  id              String       @id @default(uuid())
+  quantityChanged Int
+  movementType    MovementType
+  reason          String
+  createdAt       DateTime     @default(now())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  @@index([productId])
+}
+
+model Challan {
+  id            String        @id @default(uuid())
+  challanNumber String        @unique
+  totalQuantity Int           @default(0)
+  status        ChallanStatus @default(DRAFT)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  items ChallanItem[]
+
+  @@index([status])
+  @@index([customerId])
+}
+
+model ChallanItem {
+  id                  String @id @default(uuid())
+  productNameSnapshot String
+  skuSnapshot         String
+  unitPriceSnapshot   Float
+  quantity            Int
+
+  challanId String
+  challan   Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([challanId])
+}
+
+// Collision-safe sequential source for human-readable challan numbers.
+// One row per year; incremented atomically inside the challan-create transaction.
+model Counter {
+  id    String @id
+  value Int    @default(0)
+}
