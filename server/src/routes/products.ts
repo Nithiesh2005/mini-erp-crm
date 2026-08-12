@@ -86,7 +86,7 @@ router.post("/", canWrite, validate(productBody), async (req, res) => {
 
 // GET /products/:id
 router.get("/:id", async (req, res) => {
-  const product = await prisma.product.findUnique({ where: { id: req.params.id } });
+  const product = await prisma.product.findUnique({ where: { id: req.params.id as string } });
   if (!product) throw new AppError(404, "Product not found");
   res.json(product);
 });
@@ -94,17 +94,17 @@ router.get("/:id", async (req, res) => {
 // PUT /products/:id  (currentStock excluded — adjust via stock-movements)
 router.put("/:id", canWrite, validate(productUpdateBody), async (req, res) => {
   const data = req.valid as z.infer<typeof productUpdateBody>;
-  const product = await prisma.product.update({ where: { id: req.params.id }, data });
+  const product = await prisma.product.update({ where: { id: req.params.id as string }, data });
   res.json(product);
 });
 
 // DELETE /products/:id  (blocked if used on any challan; its own stock log is removed with it)
 router.delete("/:id", canWrite, async (req, res) => {
-  const used = await prisma.challanItem.count({ where: { productId: req.params.id } });
+  const used = await prisma.challanItem.count({ where: { productId: req.params.id as string } });
   if (used) throw new AppError(409, "Cannot delete a product used on a challan");
   await prisma.$transaction([
-    prisma.stockMovement.deleteMany({ where: { productId: req.params.id } }),
-    prisma.product.delete({ where: { id: req.params.id } }),
+    prisma.stockMovement.deleteMany({ where: { productId: req.params.id as string } }),
+    prisma.product.delete({ where: { id: req.params.id as string } }),
   ]);
   res.status(204).end();
 });
@@ -112,7 +112,7 @@ router.delete("/:id", canWrite, async (req, res) => {
 // GET /products/:id/stock-movements
 router.get("/:id/stock-movements", async (req, res) => {
   const movements = await prisma.stockMovement.findMany({
-    where: { productId: req.params.id },
+    where: { productId: req.params.id as string },
     orderBy: { createdAt: "desc" },
     include: { createdBy: { select: { id: true, name: true } } },
   });
@@ -124,7 +124,7 @@ router.get("/:id/stock-movements", async (req, res) => {
 router.post("/:id/stock-movements", canWrite, validate(movementBody), async (req, res) => {
   const { quantityChanged, reason } = req.valid as z.infer<typeof movementBody>;
   const movement = await prisma.$transaction(async (tx) => {
-    const product = await tx.product.findUnique({ where: { id: req.params.id } });
+    const product = await tx.product.findUnique({ where: { id: req.params.id as string } });
     if (!product) throw new AppError(404, "Product not found");
     if (product.currentStock + quantityChanged < 0) {
       throw new AppError(

@@ -112,7 +112,7 @@ router.post("/", canWrite, validate(challanBody), async (req, res) => {
 // GET /challans/:id
 router.get("/:id", async (req, res) => {
   const challan = await prisma.challan.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     include: detailInclude,
   });
   if (!challan) throw new AppError(404, "Challan not found");
@@ -122,7 +122,7 @@ router.get("/:id", async (req, res) => {
 // PUT /challans/:id  (edit while draft — replaces customer + items wholesale)
 router.put("/:id", canWrite, validate(challanBody), async (req, res) => {
   const { customerId, items } = req.valid as z.infer<typeof challanBody>;
-  const existing = await prisma.challan.findUnique({ where: { id: req.params.id } });
+  const existing = await prisma.challan.findUnique({ where: { id: req.params.id as string } });
   if (!existing) throw new AppError(404, "Challan not found");
   if (existing.status !== ChallanStatus.DRAFT) {
     throw new AppError(409, `Only draft challans can be edited (current: ${existing.status})`);
@@ -141,7 +141,7 @@ router.put("/:id", canWrite, validate(challanBody), async (req, res) => {
 
 // DELETE /challans/:id  (draft or cancelled only; confirmed must be cancelled first)
 router.delete("/:id", canWrite, async (req, res) => {
-  const challan = await prisma.challan.findUnique({ where: { id: req.params.id } });
+  const challan = await prisma.challan.findUnique({ where: { id: req.params.id as string } });
   if (!challan) throw new AppError(404, "Challan not found");
   if (challan.status === ChallanStatus.CONFIRMED) {
     throw new AppError(409, "Cancel the challan before deleting (stock is currently deducted)");
@@ -156,7 +156,7 @@ router.delete("/:id", canWrite, async (req, res) => {
 // and set status = CONFIRMED — all inside one transaction.
 router.post("/:id/confirm", canWrite, async (req, res) => {
   const challan = await prisma.challan.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     include: { items: true },
   });
   if (!challan) throw new AppError(404, "Challan not found");
@@ -208,7 +208,7 @@ router.post("/:id/confirm", canWrite, async (req, res) => {
 // compensating IN movements, then cancelled. (Assumption documented in README.)
 router.post("/:id/cancel", canWrite, async (req, res) => {
   const challan = await prisma.challan.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     include: { items: true },
   });
   if (!challan) throw new AppError(404, "Challan not found");

@@ -66,7 +66,7 @@ router.post("/", canWrite, validate(customerBody), async (req, res) => {
 
 // GET /customers/:id
 router.get("/:id", async (req, res) => {
-  const customer = await prisma.customer.findUnique({ where: { id: req.params.id } });
+  const customer = await prisma.customer.findUnique({ where: { id: req.params.id as string } });
   if (!customer) throw new AppError(404, "Customer not found");
   res.json(customer);
 });
@@ -74,22 +74,22 @@ router.get("/:id", async (req, res) => {
 // PUT /customers/:id
 router.put("/:id", canWrite, validate(customerBody.partial()), async (req, res) => {
   const data = req.valid as Partial<z.infer<typeof customerBody>>;
-  const customer = await prisma.customer.update({ where: { id: req.params.id }, data });
+  const customer = await prisma.customer.update({ where: { id: req.params.id as string }, data });
   res.json(customer);
 });
 
 // DELETE /customers/:id  (blocked if the customer has any challans; follow-ups cascade)
 router.delete("/:id", canWrite, async (req, res) => {
-  const challans = await prisma.challan.count({ where: { customerId: req.params.id } });
+  const challans = await prisma.challan.count({ where: { customerId: req.params.id as string } });
   if (challans) throw new AppError(409, "Cannot delete a customer that has challans");
-  await prisma.customer.delete({ where: { id: req.params.id } });
+  await prisma.customer.delete({ where: { id: req.params.id as string } });
   res.status(204).end();
 });
 
 // GET /customers/:id/followups
 router.get("/:id/followups", async (req, res) => {
   const followups = await prisma.customerFollowup.findMany({
-    where: { customerId: req.params.id },
+    where: { customerId: req.params.id as string },
     orderBy: { createdAt: "desc" },
     include: { createdBy: { select: { id: true, name: true } } },
   });
@@ -99,10 +99,10 @@ router.get("/:id/followups", async (req, res) => {
 // POST /customers/:id/followups
 router.post("/:id/followups", canWrite, validate(followupBody), async (req, res) => {
   const { note } = req.valid as z.infer<typeof followupBody>;
-  const customer = await prisma.customer.findUnique({ where: { id: req.params.id } });
+  const customer = await prisma.customer.findUnique({ where: { id: req.params.id as string } });
   if (!customer) throw new AppError(404, "Customer not found");
   const followup = await prisma.customerFollowup.create({
-    data: { note, customerId: req.params.id, createdById: req.user!.id },
+    data: { note, customerId: req.params.id as string, createdById: req.user!.id },
     include: { createdBy: { select: { id: true, name: true } } },
   });
   res.status(201).json(followup);
