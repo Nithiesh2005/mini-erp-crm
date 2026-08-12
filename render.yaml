@@ -1,0 +1,20 @@
+# Render Blueprint for the API. Import at render.com → New → Blueprint,
+# point it at this repo. The SPA deploys separately on Vercel (see README).
+#
+# NODE_ENV=production on Render makes `npm install` skip devDependencies, but
+# the build needs prisma/tsc/tsx (devDeps) — so we force --include=dev.
+# Render injects PORT automatically; the app reads it from the environment.
+services:
+  - type: web
+    name: mini-erp-crm-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install --include=dev && npm run generate && npm run migrate:deploy && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false      # paste your Neon connection string in the dashboard
+      - key: JWT_SECRET
+        generateValue: true

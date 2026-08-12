@@ -242,18 +242,32 @@ All four accounts use the password **`password123`**.
 
 ---
 
-## Deploy (free tier)
+## Deploy (Neon + Render + Vercel, free tier)
 
-Not deployed live (no hosting provisioned), but the path is standard:
+Config files are committed: [`render.yaml`](render.yaml) (API blueprint) and
+[`client/vercel.json`](client/vercel.json) (SPA routing rewrite). The repo lives
+on GitHub; both hosts deploy from it.
 
-1. **Database — Neon** (free Postgres): create a project, copy the pooled
-   connection string into the API's `DATABASE_URL`.
-2. **API — Render / Railway** (free web service): root `server/`,
-   build `npm install && npm run build && npm run generate`,
-   start `npm start`. Set `DATABASE_URL`, `JWT_SECRET`, `PORT`. Run
-   `npm run migrate && npm run seed` once (shell or release command).
-3. **SPA — Vercel / Netlify**: root `client/`, build `npm run build`, output
-   `dist/`. Set `VITE_API_URL` to the deployed API URL. Enable CORS accordingly.
+**1. Database — Neon** (already provisioned): copy the pooled connection string;
+you'll paste it into Render as `DATABASE_URL`.
+
+**2. API — Render** (from `render.yaml`):
+- render.com → **New → Blueprint** → pick this repo. It reads `render.yaml`.
+- Set **`DATABASE_URL`** (your Neon string). `JWT_SECRET` is auto-generated.
+- The build runs `prisma generate → migrate deploy → tsc`. Start is `npm start`.
+- **Seed once** after the first deploy — Render service → **Shell** →
+  `npm run seed` (creates the 4 login users + demo data; idempotent).
+- Note the API URL, e.g. `https://mini-erp-crm-api.onrender.com`.
+
+**3. SPA — Vercel:**
+- vercel.com → **Add New → Project** → this repo → set **Root Directory =
+  `client`** (framework auto-detects Vite).
+- Add env var **`VITE_API_URL`** = your Render API URL → **Deploy**.
+- `vercel.json` rewrites all routes to `index.html` so deep links / refresh work.
+
+CORS is open on the API (`cors()`), so the Vercel origin can call it as-is. The
+free Render instance sleeps when idle — the first request after a nap takes a few
+seconds to wake.
 
 ---
 
