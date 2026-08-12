@@ -41,7 +41,7 @@ export default function Login() {
             </svg>
           </div>
         </div>
-        <h1>Nexus ERP</h1>
+        <h1>Mini ERP + CRM</h1>
         <p className="login-sub">Sign in to your operations workspace</p>
         <label className="field">
           <span>Email Address</span>

@@ -24,7 +24,7 @@ export function Layout() {
               <line x1="12" y1="22.08" x2="12" y2="12"></line>
             </svg>
           </div>
-          <span>Nexus ERP</span>
+          <span>Mini ERP + CRM</span>
         </div>
         <nav>
           <NavLink to="/" end>
