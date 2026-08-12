@@ -13,3 +13,6 @@ generated/prisma/
 # Logs / editor
 *.log
 .DS_Store
+
+.vercel
+.env*
