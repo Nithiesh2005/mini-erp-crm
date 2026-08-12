@@ -8,6 +8,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+  res.json({
+    name: "Mini ERP + CRM API",
+    status: "online",
+    health: "/health",
+    frontend: "https://client-lake-nu-36.vercel.app"
+  });
+});
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
